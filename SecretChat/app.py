@@ -9,8 +9,13 @@ from flask_login import (
         LoginManager, login_user, logout_user,
         current_user, login_required,
         )
+from forms import (
+        LoginForm, RegistForm, MessageForm,
+        UploadForm,
+        )
+from werkzeug.utils import secure_filename
 from datetime import timedelta
-from db import User
+from db import User, Message
 
 
 app = Flask('Chat')
@@ -46,7 +51,7 @@ def login():
     elif request.method == 'POST' and form.validate_on_submit():
         username = form.data.username
         password = form.data.password
-        remmeber = form.data.remember
+        remember = form.data.remember
         user = User.objects(username=username, password=password, remember=remember).first()
         if user:
             login_user(user, remember=remember)
@@ -71,11 +76,49 @@ def user_info():
         return render_template('user.html', user=current_user)
 
 
+@login_required
 @app.route('/logout')
 def logout():
     logout_user()
     flash('You have been logged out')
     return redirect(url_for('index'))
+
+
+@login_required
+@app.route('/chat/private/<int:id_>', methods=['POST', 'GET'])
+def priv_chat():
+    form = MessageForm()
+    if request.method == 'POST':
+        content = form.data.content
+        send2 = form.data.send2
+        send2user = User.get_or_404(id=send2)
+        message = Message(
+                create_by=current_user.id,
+                content=content,
+                send2=send2
+                )
+        message.save()
+    src_msgs = Message.objects(create=current_user.id, send2=id_)
+    dst_msgs = Message.objects(send2=current_user.id, create=id_)
+    return render_template('/priv_chat.html',src_msgs=src_msgs, dst_msgs=dst_mags, form=form)
+
+
+@login_required
+@app.route('/chat/group/<int:id_>', methods=['POST', 'GET'])
+def group_chat():
+    form = MessageForm()
+    if request.method == 'POST':
+        content = form.data.content
+        send2 = form.data.send2
+        send2user = User.get_or_404(id=send2)
+        message = Message(
+                create_by=current_user.id,
+                content=content,
+                send2=send2
+                )
+        message.save()
+    msgs = Message.objects(send2=id_)
+    return render_template('/group_chat.html', msgs=msgs, form=form)
 
 
 app.run(debug=1)

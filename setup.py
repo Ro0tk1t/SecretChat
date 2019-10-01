@@ -21,6 +21,7 @@ setup(
             'flask-bootstrap',
             'flask-principal',
             'flask-bcrypt',
+            'flask-uploads',
             ],
 
         extras_require={
