@@ -64,6 +64,16 @@ def login():
     return render_template('login.html', form=form)
 
 
+@app.route('/regist', methods=['POST', 'GET'])
+def regist():
+    form = RegistForm()
+    if current_user.is_authenticated:
+        return render_template('user.html', user=current_user)
+    elif request.method == 'POST':
+        return render_template('regist.html', form=form)
+    return render_template('regist.html', form=form)
+
+
 @app.route('/user')
 def user_info():
     if not current_user:
