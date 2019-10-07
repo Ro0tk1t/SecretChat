@@ -21,15 +21,15 @@ class RegistForm(FlaskForm):
     phone = StringField('Phone')
 
 
-class MessageForm(FlaskForm):
-    send2 = HiddenField('Send2', [DataRequired()])
-    content = FormField(CotentForm)
-    upload = FormField(UploadForm)
-
-
 class ContentForm(FlaskForm):
     content = TextAreaField('Content', [DataRequired()])
 
 
 class UploadForm(FlaskForm):
     file = FileField('File', [FileRequired()])
+
+
+class MessageForm(FlaskForm):
+    send2 = HiddenField('Send2', [DataRequired()])
+    content = FormField(ContentForm)
+    upload = FormField(UploadForm)

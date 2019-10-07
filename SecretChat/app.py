@@ -14,11 +14,15 @@ from forms import (
         UploadForm,
         )
 from werkzeug.utils import secure_filename
+from flask_bootstrap import Bootstrap
 from datetime import timedelta
 from db import User, Message
 
 
 app = Flask('Chat')
+app.config.from_pyfile('app.config')
+bootstrap = Bootstrap()
+bootstrap.init_app(app)
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.init_app(app)
@@ -46,18 +50,18 @@ def index():
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     form = LoginForm()
-    if current_user:
+    if current_user.is_authenticated:
         return render_template('user.html', user=current_user)
     elif request.method == 'POST' and form.validate_on_submit():
-        username = form.data.username
-        password = form.data.password
-        remember = form.data.remember
-        user = User.objects(username=username, password=password, remember=remember).first()
+        username = form.username.data
+        password = form.password.data
+        remember = form.remember.data
+        user = User.objects(username=username, password=password).first()
         if user:
             login_user(user, remember=remember)
             return redirect('/user')
         return render_template('user.html', user=current_user)
-    return render_template('login.html')
+    return render_template('login.html', form=form)
 
 
 @app.route('/user')
@@ -86,7 +90,7 @@ def logout():
 
 @login_required
 @app.route('/chat/private/<int:id_>', methods=['POST', 'GET'])
-def priv_chat():
+def priv_chat(id_=None):
     form = MessageForm()
     if request.method == 'POST':
         content = form.data.content
@@ -100,12 +104,12 @@ def priv_chat():
         message.save()
     src_msgs = Message.objects(create=current_user.id, send2=id_)
     dst_msgs = Message.objects(send2=current_user.id, create=id_)
-    return render_template('/priv_chat.html',src_msgs=src_msgs, dst_msgs=dst_mags, form=form)
+    return render_template('/priv_chat.html',src_msgs=src_msgs, dst_msgs=dst_msgs, form=form)
 
 
 @login_required
 @app.route('/chat/group/<int:id_>', methods=['POST', 'GET'])
-def group_chat():
+def group_chat(id_=None):
     form = MessageForm()
     if request.method == 'POST':
         content = form.data.content
