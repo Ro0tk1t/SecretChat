@@ -5,6 +5,8 @@ from flask import Flask
 from flask_mongoengine import MongoEngine
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import AnonymousUserMixin
+from SecretChat.extensions import bcrypt
+
 from datetime import datetime
 
 
@@ -20,6 +22,7 @@ class User(mongo.Document):
     username = mongo.StringField(required=True, unique=True, default='admin')
     password = mongo.StringField(required=True, default='123456')
     nikename = mongo.StringField(default='Mr. null')
+    describe = mongo.StringField(default='This guy is so lazy, no more infomation for this guy')
     last_online = mongo.DateTimeField(default=datetime.now())
     phone = mongo.StringField()
     email = mongo.EmailField()
@@ -34,6 +37,12 @@ class User(mongo.Document):
 
     def get_id(self):
         return self.id
+
+    def set_password(self, password):
+        return bcrypt.generate_password_hash(password).decode()
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password, password)
 
     def __repr__(self):
         return '<User:  %r>' % self.username

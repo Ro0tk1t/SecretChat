@@ -14,14 +14,15 @@ from forms import (
         UploadForm,
         )
 from werkzeug.utils import secure_filename
-from flask_bootstrap import Bootstrap
+from SecretChat.extensions import (
+    bootstrap, bcrypt
+)
 from datetime import timedelta
 from db import User, Message
 
 
 app = Flask('Chat')
 app.config.from_pyfile('app.config')
-bootstrap = Bootstrap()
 bootstrap.init_app(app)
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
@@ -40,6 +41,11 @@ def error_403(error):
     return render_template('403.html'), 403
 
 
+@login_manager.user_loader
+def load_user(id):
+    return User.objects(id=id).first()
+
+
 @app.route('/')
 def index():
     if current_user:
@@ -51,17 +57,17 @@ def index():
 def login():
     form = LoginForm()
     if current_user.is_authenticated:
-        return render_template('user.html', user=current_user)
+        return redirect('/user/me')
     elif request.method == 'POST' and form.validate_on_submit():
         username = form.username.data
-        password = form.password.data
         remember = form.remember.data
-        user = User.objects(username=username, password=password).first()
-        if user:
+        password = form.password.data
+        user = User.objects(username=username).first()
+        if user.check_password(password):
             login_user(user, remember=remember)
-            return redirect('/user')
-        return render_template('user.html', user=current_user)
-    return render_template('login.html', form=form)
+            return redirect('/user/me')
+        return render_template('login.html', form=form, status=0)
+    return render_template('login.html', form=form, status=1)
 
 
 @app.route('/regist', methods=['POST', 'GET'])
@@ -69,25 +75,38 @@ def regist():
     form = RegistForm()
     if current_user.is_authenticated:
         return render_template('user.html', user=current_user)
-    elif request.method == 'POST':
-        return render_template('regist.html', form=form)
+    elif request.method == 'POST' and form.validate_pwd() and form.validate_on_submit():
+        if not form.agreed():
+            flash('If you disagree the protocol, you can not use our product')
+            return render_template('regist.html', form=form)
+        nikename = form.nikename.data
+        username = form.username.data
+        password = form.password.data
+        email = form.email.data
+        phone = form.phone.data
+        user = User(
+            username=username,
+            nikename=nikename,
+            email=email,
+            phone=phone,
+        )
+        user.password = user.set_password(password)
+        user.save()
+        flash('regist success, you can login now')
+        return redirect('login')
     return render_template('regist.html', form=form)
 
 
-@app.route('/user')
-def user_info():
+@app.route('/user/<id_>')
+def user_info(id_='me'):
     if not current_user:
         flash('Plz login or regist')
         return redirect('login')
+    if id_ == 'me':
+        user = current_user
     else:
-       # username = current_user.username
-       # nikename = current_user.nikename
-       # describe = current_user.describe
-       # phone = current_user.phone
-       # email = current_user.email
-       # state = current_user.state
-       # last_online = current_user.last_online
-        return render_template('user.html', user=current_user)
+        user = User.get_or_404(id=id_)
+    return render_template('user.html', user=user)
 
 
 @login_required

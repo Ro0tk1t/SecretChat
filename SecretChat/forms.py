@@ -16,9 +16,17 @@ class LoginForm(FlaskForm):
 class RegistForm(FlaskForm):
     username = StringField('Username', [DataRequired(), Length(max=20)])
     password = PasswordField('Password', [DataRequired()])
+    password1 = PasswordField('Password1', [DataRequired()])
+    agree = BooleanField('Agree')
     nikename = StringField('Nikename')
     email = StringField('Email')
     phone = StringField('Phone')
+
+    def validate_pwd(self):
+        return self.password.data == self.password1.data
+
+    def agreed(self):
+        return self.agree
 
 
 class ContentForm(FlaskForm):
